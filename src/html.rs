@@ -66,7 +66,8 @@ impl Parser {
         self.consume_while(|c: char| !c.is_whitespace());
     }
 
-    // タグに名前をつける
+    // タグに名前をつける??
+    // なんか違う気がするな,<h2>h2element</h2>を入れても何も返ってこない（h2が返ってくるイメージだった）
     pub fn parse_tag_name(&mut self) -> String {
         self.consume_while(|c: char| match c {
             'a'..='z' | 'A'..='Z' | '0'..='9' => true,
@@ -76,7 +77,7 @@ impl Parser {
 
     // nodeをparseする
     fn parse_node(&mut self) -> dom::Node {
-        // 現在の文字を見て'<'ならparse_element()でそれ以外ならparse_text()
+        // 次の文字を見て'<'ならparse_element()でそれ以外ならparse_text()
         match self.next_char() {
             '<' => self.parse_element(),
             _ => self.parse_text(),
