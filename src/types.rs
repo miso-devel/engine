@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 pub type AttrMap = HashMap<String, String>;
-
-struct ElementData {
+pub struct ElementData {
     tag_name: String,
     attributes: AttrMap,
 }
