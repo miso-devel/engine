@@ -24,7 +24,7 @@ impl Parser {
 
     pub fn consume_char(&mut self) -> char {
         // 文字列をスライスにしている
-        let mut iter = self.input[self.pos..].char_indices();
+        let mut iter: std::str::CharIndices = self.input[self.pos..].char_indices();
         // 現在の文字を1つ後ろにずらして保存
         let (_, cur_char) = iter.next().unwrap();
         // 次の文字の位置を取得している(iterはすでに見られた値は入っていないので常に1になる？)
@@ -41,7 +41,7 @@ impl Parser {
         F: Fn(char) -> bool,
     {
         // 空のString型を作る
-        let mut result = String::new();
+        let mut result: String = String::new();
         // println!(
         //     "result:{:?}   eof:{:?}  test:{:?} ",
         //     result,
@@ -86,7 +86,7 @@ impl Parser {
 
     // Parse a sequence of sibling nodes.
     fn parse_nodes(&mut self) -> Vec<dom::Node> {
-        let mut nodes = Vec::new();
+        let mut nodes: Vec<dom::Node> = Vec::new();
         loop {
             self.consume_whitespace();
             if self.eof() || self.starts_with("</") {
@@ -99,19 +99,19 @@ impl Parser {
 
     // Parse a text node.
     fn parse_text(&mut self) -> dom::Node {
-        dom::text(self.consume_while(|c| c != '<'))
+        dom::text(self.consume_while(|c: char| c != '<'))
     }
 
     // Parse a single element, including its open tag, contents, and closing tag.
     fn parse_element(&mut self) -> dom::Node {
         // Opening tag.
         assert!(self.consume_char() == '<');
-        let tag_name = self.parse_tag_name();
-        let attrs = self.parse_attributes();
+        let tag_name: String = self.parse_tag_name();
+        let attrs: HashMap<String, String> = self.parse_attributes();
         assert!(self.consume_char() == '>');
 
         // Contents.
-        let children = self.parse_nodes();
+        let children: Vec<dom::Node> = self.parse_nodes();
 
         // Closing tag.
         assert!(self.consume_char() == '<');
@@ -124,24 +124,24 @@ impl Parser {
 
     // Parse a single name="value" pair.
     fn parse_attr(&mut self) -> (String, String) {
-        let name = self.parse_tag_name();
+        let name: String = self.parse_tag_name();
         assert!(self.consume_char() == '=');
-        let value = self.parse_attr_value();
+        let value: String = self.parse_attr_value();
         return (name, value);
     }
 
     // Parse a quoted value.
     fn parse_attr_value(&mut self) -> String {
-        let open_quote = self.consume_char();
+        let open_quote: char = self.consume_char();
         assert!(open_quote == '"' || open_quote == '\'');
-        let value = self.consume_while(|c| c != open_quote);
+        let value: String = self.consume_while(|c: char| c != open_quote);
         assert!(self.consume_char() == open_quote);
         return value;
     }
 
     // Parse a list of name="value" pairs, separated by whitespace.
     fn parse_attributes(&mut self) -> dom::AttrMap {
-        let mut attributes = HashMap::new();
+        let mut attributes: HashMap<String, String> = HashMap::new();
         loop {
             self.consume_whitespace();
             if self.next_char() == '>' {
@@ -155,7 +155,7 @@ impl Parser {
 
     // Parse an HTML document and return the root element.
     pub fn parse(source: String) -> dom::Node {
-        let mut nodes = Parser {
+        let mut nodes: Vec<dom::Node> = Parser {
             pos: 0,
             input: source,
         }
