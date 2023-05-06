@@ -18,8 +18,4 @@ fn main() {
             "<h1 class='sample' style='font-bold'>あああ<p>pタグ</p>h1タグ</h1>".to_string()
         )
     );
-    // println!("{:?}", sample_html.consume_char());
-    // println!("{:?}", sample_html.consume_char());
-    // println!("{:?}", sample_html.consume_char());
-    // println!("{:?}", sample_html.consume_whitespace());
 }

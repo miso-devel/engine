@@ -41,7 +41,7 @@ impl Parser {
     }
 
     // nodeをparseする
-    pub fn parse_node(&mut self) -> dom::Node {
+    fn parse_node(&mut self) -> dom::Node {
         // 次の文字を見て'<'ならparse_element()でそれ以外ならparse_text()
         match self.next_char() {
             '<' => self.parse_element(),
@@ -50,7 +50,7 @@ impl Parser {
     }
 
     // elementをparseする
-    pub fn parse_element(&mut self) -> dom::Node {
+    fn parse_element(&mut self) -> dom::Node {
         // '<'でないならエラー
         assert!(self.consume_char() == '<');
         // '<' から始まっているので 空白か'/>'がきたら終わってタグ名が取れる
@@ -72,7 +72,7 @@ impl Parser {
     }
 
     // タグの名前をとってくる
-    pub fn parse_tag_name(&mut self) -> String {
+    fn parse_tag_name(&mut self) -> String {
         self.consume_while(|c: char| match c {
             'a'..='z' | 'A'..='Z' | '0'..='9' => true,
             _ => false,
@@ -118,7 +118,7 @@ impl Parser {
     }
 
     // 次の文字の値を見る
-    pub fn next_char(&self) -> char {
+    fn next_char(&self) -> char {
         self.input[self.pos..].chars().next().unwrap()
     }
 
@@ -132,7 +132,7 @@ impl Parser {
         self.pos >= self.input.len()
     }
 
-    pub fn consume_char(&mut self) -> char {
+    fn consume_char(&mut self) -> char {
         // 文字列をスライスにしている
         let mut iter: std::str::CharIndices = self.input[self.pos..].char_indices();
         // 現在の文字を1つ後ろにずらして保存
@@ -145,7 +145,7 @@ impl Parser {
         return cur_char;
     }
 
-    pub fn consume_while<F>(&mut self, test: F) -> String
+    fn consume_while<F>(&mut self, test: F) -> String
     where
         // ジェネリクスの型を制限するためのwhere
         F: Fn(char) -> bool,
@@ -160,7 +160,7 @@ impl Parser {
         return result;
     }
     // 空白が出た時点でループを中断する
-    pub fn consume_whitespace(&mut self) {
+    fn consume_whitespace(&mut self) {
         self.consume_while(|c: char| c.is_whitespace());
     }
 
