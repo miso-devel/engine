@@ -1,5 +1,6 @@
 use crate::html::Parser;
 
+pub mod css;
 pub mod dom;
 pub mod html;
 
@@ -11,6 +12,7 @@ fn main() {
     };
     println!("{:?}", sample_node.node_type);
 
+    println!("----------------------------------------------------------------------");
     // HTML動作確認
     println!(
         "{:?}",
@@ -18,4 +20,11 @@ fn main() {
             "<h1 class='sample' style='font-bold'>あああ<p>pタグ</p>h1タグ</h1>".to_string()
         )
     );
+
+    println!("----------------------------------------------------------------------");
+    // CSS動作確認
+    println!(
+        "{:?}",
+        crate::css::parse(".a.b{ margin: auto; }".to_string())
+    )
 }

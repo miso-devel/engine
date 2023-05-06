@@ -1,4 +1,4 @@
-use crate::dom;
+use crate::{css::SimpleSelector, dom};
 use std::collections::HashMap;
 
 pub struct Parser {
