@@ -1,12 +1,122 @@
 use crate::dom;
 use std::collections::HashMap;
-#[derive(Debug)]
+
 pub struct Parser {
     pub pos: usize,    // posは現在のinputの位置を保存する
     pub input: String, // parseする文字列？
 }
 
 impl Parser {
+    // rootのドキュメントを返す
+    pub fn parse(source: String) -> dom::Node {
+        let mut nodes: Vec<dom::Node> = Parser {
+            pos: 0,
+            input: source,
+        }
+        .parse_nodes();
+
+        // 要素が一つしかないならswap_removeで最初の要素を消してる
+        if nodes.len() == 1 {
+            nodes.swap_remove(0)
+        } else {
+            dom::elem("html".to_string(), HashMap::new(), nodes)
+        }
+    }
+
+    // selfを受け取ってNodeの配列を返す
+    fn parse_nodes(&mut self) -> Vec<dom::Node> {
+        // 配列の初期化
+        let mut nodes: Vec<dom::Node> = Vec::new();
+        // 文字列の読み取りが終わる or 閉じるタグから文字列が始まってたらループから抜ける
+        // それまではparse_nodeしたものを配列に入れ続ける
+        loop {
+            self.consume_whitespace();
+            if self.eof() || self.starts_with("</") {
+                break;
+            }
+            // parse_nodeの中でまだelementがあるならparse_nodesがまた呼ばれるので再帰的にchildrenに入れられる
+            nodes.push(self.parse_node());
+        }
+        return nodes;
+    }
+
+    // nodeをparseする
+    pub fn parse_node(&mut self) -> dom::Node {
+        // 次の文字を見て'<'ならparse_element()でそれ以外ならparse_text()
+        match self.next_char() {
+            '<' => self.parse_element(),
+            _ => self.parse_text(),
+        }
+    }
+
+    // elementをparseする
+    pub fn parse_element(&mut self) -> dom::Node {
+        // '<'でないならエラー
+        assert!(self.consume_char() == '<');
+        // '<' から始まっているので 空白か'/>'がきたら終わってタグ名が取れる
+        let tag_name: String = self.parse_tag_name();
+
+        let attrs: HashMap<String, String> = self.parse_attributes();
+        assert!(self.consume_char() == '>');
+
+        // 中身、Nodeの中のchildrenにNodeが入るのはこれ
+        let children: Vec<dom::Node> = self.parse_nodes();
+
+        // '</'がないなら閉じてないのならエラー
+        assert!(self.consume_char() == '<');
+        assert!(self.consume_char() == '/');
+        assert!(self.parse_tag_name() == tag_name);
+        assert!(self.consume_char() == '>');
+
+        return dom::elem(tag_name, attrs, children);
+    }
+
+    // タグの名前をとってくる
+    pub fn parse_tag_name(&mut self) -> String {
+        self.consume_while(|c: char| match c {
+            'a'..='z' | 'A'..='Z' | '0'..='9' => true,
+            _ => false,
+        })
+    }
+
+    // attributesを見る
+    fn parse_attributes(&mut self) -> dom::AttrMap {
+        let mut attributes: HashMap<String, String> = HashMap::new();
+        loop {
+            self.consume_whitespace();
+            // タグが終了するまで見る
+            if self.next_char() == '>' {
+                break;
+            }
+            // parse_attr()で次のattributesまで飛んでる
+            let (name, value) = self.parse_attr();
+            attributes.insert(name, value);
+        }
+        return attributes;
+    }
+
+    // class = "className"とかとってきてくれる
+    fn parse_attr(&mut self) -> (String, String) {
+        println!("parse_attr");
+        // '='になるまで見るのでtag_nameを見れる
+        let name: String = self.parse_tag_name();
+        assert!(self.consume_char() == '=');
+        // valueはどこで終わる？
+        let value: String = self.parse_attr_value();
+        return (name, value);
+    }
+
+    // class = "className"の""の中をとってきてくれる
+    fn parse_attr_value(&mut self) -> String {
+        let open_quote: char = self.consume_char();
+        // ' とか " でないとエラー
+        assert!(open_quote == '"' || open_quote == '\'');
+        // ' or " まで消費する
+        let value: String = self.consume_while(|c: char| c != open_quote);
+        assert!(self.consume_char() == open_quote);
+        return value;
+    }
+
     // 次の文字の値を見る
     pub fn next_char(&self) -> char {
         self.input[self.pos..].chars().next().unwrap()
@@ -42,130 +152,20 @@ impl Parser {
     {
         // 空のString型を作る
         let mut result: String = String::new();
-        // println!(
-        //     "result:{:?}   eof:{:?}  test:{:?} ",
-        //     result,
-        //     !self.eof(),
-        //     test(self.next_char())
-        // );
         // 見る文字列がなくなる and 関数の条件を満たさなくなる　まではループ
         while !self.eof() && test(self.next_char()) {
             // 見た文字列をresultに入れてる
-            // println!(
-            //     "result:{:?}   eof:{:?}  test:{:?} ",
-            //     result,
-            //     !self.eof(),
-            //     test(self.next_char())
-            // );
             result.push(self.consume_char());
         }
         return result;
     }
     // 空白が出た時点でループを中断する
     pub fn consume_whitespace(&mut self) {
-        self.consume_while(|c: char| !c.is_whitespace());
+        self.consume_while(|c: char| c.is_whitespace());
     }
 
-    // タグに名前をつける??
-    // なんか違う気がするな,<h2>h2element</h2>を入れても何も返ってこない（h2が返ってくるイメージだった）
-    pub fn parse_tag_name(&mut self) -> String {
-        self.consume_while(|c: char| match c {
-            'a'..='z' | 'A'..='Z' | '0'..='9' => true,
-            _ => false,
-        })
-    }
-
-    // nodeをparseする
-    fn parse_node(&mut self) -> dom::Node {
-        // 次の文字を見て'<'ならparse_element()でそれ以外ならparse_text()
-        match self.next_char() {
-            '<' => self.parse_element(),
-            _ => self.parse_text(),
-        }
-    }
-
-    // Parse a sequence of sibling nodes.
-    fn parse_nodes(&mut self) -> Vec<dom::Node> {
-        let mut nodes: Vec<dom::Node> = Vec::new();
-        loop {
-            self.consume_whitespace();
-            if self.eof() || self.starts_with("</") {
-                break;
-            }
-            nodes.push(self.parse_node());
-        }
-        return nodes;
-    }
-
-    // Parse a text node.
+    // 次の文字列が'<'でないところまでの文字列を返す
     fn parse_text(&mut self) -> dom::Node {
         dom::text(self.consume_while(|c: char| c != '<'))
-    }
-
-    // Parse a single element, including its open tag, contents, and closing tag.
-    fn parse_element(&mut self) -> dom::Node {
-        // Opening tag.
-        assert!(self.consume_char() == '<');
-        let tag_name: String = self.parse_tag_name();
-        let attrs: HashMap<String, String> = self.parse_attributes();
-        assert!(self.consume_char() == '>');
-
-        // Contents.
-        let children: Vec<dom::Node> = self.parse_nodes();
-
-        // Closing tag.
-        assert!(self.consume_char() == '<');
-        assert!(self.consume_char() == '/');
-        assert!(self.parse_tag_name() == tag_name);
-        assert!(self.consume_char() == '>');
-
-        return dom::elem(tag_name, attrs, children);
-    }
-
-    // Parse a single name="value" pair.
-    fn parse_attr(&mut self) -> (String, String) {
-        let name: String = self.parse_tag_name();
-        assert!(self.consume_char() == '=');
-        let value: String = self.parse_attr_value();
-        return (name, value);
-    }
-
-    // Parse a quoted value.
-    fn parse_attr_value(&mut self) -> String {
-        let open_quote: char = self.consume_char();
-        assert!(open_quote == '"' || open_quote == '\'');
-        let value: String = self.consume_while(|c: char| c != open_quote);
-        assert!(self.consume_char() == open_quote);
-        return value;
-    }
-
-    // Parse a list of name="value" pairs, separated by whitespace.
-    fn parse_attributes(&mut self) -> dom::AttrMap {
-        let mut attributes: HashMap<String, String> = HashMap::new();
-        loop {
-            self.consume_whitespace();
-            if self.next_char() == '>' {
-                break;
-            }
-            let (name, value) = self.parse_attr();
-            attributes.insert(name, value);
-        }
-        return attributes;
-    }
-
-    // Parse an HTML document and return the root element.
-    pub fn parse(source: String) -> dom::Node {
-        let mut nodes: Vec<dom::Node> = Parser {
-            pos: 0,
-            input: source,
-        }
-        .parse_nodes();
-
-        // If the document contains a root element, just return it. Otherwise, create one.
-        if nodes.len() == 1 {
-            nodes.swap_remove(0)
-        } else {
-            dom::elem("html".to_string(), HashMap::new(), nodes)
-        }
     }
 }

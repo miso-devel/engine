@@ -12,11 +12,12 @@ fn main() {
     println!("{:?}", sample_node.node_type);
 
     // HTML動作確認
-    let mut sample_html = Parser {
-        pos: 0,
-        input: "<h2>h2element</h2>".to_string(),
-    };
-    println!("{:?}", sample_html.parse_tag_name());
+    println!(
+        "{:?}",
+        Parser::parse(
+            "<h1 class='sample' style='font-bold'>あああ<p>pタグ</p>h1タグ</h1>".to_string()
+        )
+    );
     // println!("{:?}", sample_html.consume_char());
     // println!("{:?}", sample_html.consume_char());
     // println!("{:?}", sample_html.consume_char());
