@@ -21,10 +21,10 @@ fn main() {
         )
     );
 
-    println!("----------------------------------------------------------------------");
+    println!("\n");
     // CSS動作確認
     println!(
         "{:?}",
-        crate::css::parse(".a.b{ margin: auto; }".to_string())
+        crate::css::parse("h1.a.b#c#d{ margin: auto; backgroundcolor: red; }".to_string())
     )
 }

@@ -57,6 +57,7 @@ impl Copy for Color {}
 pub type Specificity = (usize, usize, usize);
 
 impl Selector {
+    // それぞれの長さとか数をとってる
     pub fn specificity(&self) -> Specificity {
         // http://www.w3.org/TR/selectors/#specificity
         let Selector::Simple(ref simple) = *self;
@@ -68,7 +69,7 @@ impl Selector {
 }
 
 impl Value {
-    /// Return the size of a length in px, or zero for non-lengths.
+    //　ValueがLengthならfを返すしそれ以外なら0を返す
     pub fn to_px(&self) -> f32 {
         match *self {
             Value::Length(f, Unit::Px) => f,
@@ -77,7 +78,7 @@ impl Value {
     }
 }
 
-/// Parse a whole CSS stylesheet.
+//　最終的に呼び出されるcssをparse関数
 pub fn parse(source: String) -> Stylesheet {
     let mut parser: Parser = Parser {
         pos: 0,
@@ -94,7 +95,7 @@ struct Parser {
 }
 
 impl Parser {
-    /// Parse a list of rule sets, separated by optional whitespace.
+    // Vex<rule>を返しているのでstyleは実際ここがparseしている
     fn parse_rules(&mut self) -> Vec<Rule> {
         let mut rules: Vec<Rule> = Vec::new();
         loop {
@@ -107,7 +108,7 @@ impl Parser {
         rules
     }
 
-    /// Parse a rule set: `<selectors> { <declarations> }`.
+    //　selectors(margin) : declarations(auto);　みたいなのをここで作ってる
     fn parse_rule(&mut self) -> Rule {
         Rule {
             selectors: self.parse_selectors(),
@@ -115,12 +116,18 @@ impl Parser {
         }
     }
 
-    /// Parse a comma-separated list of selectors.
+    //　selectors(h1.style)みたいな感じがあるからVec
     fn parse_selectors(&mut self) -> Vec<Selector> {
         let mut selectors: Vec<Selector> = Vec::new();
         loop {
+            // Selector::Simple(self.parse_simple_selector())を
+            println!(
+                "parse_selectors:{:?}",
+                Selector::Simple(self.parse_simple_selector())
+            );
             selectors.push(Selector::Simple(self.parse_simple_selector()));
             self.consume_whitespace();
+            // 次の文字が,なら次のselectorに移る、{なら終わる
             match self.next_char() {
                 ',' => {
                     self.consume_char();
@@ -130,7 +137,7 @@ impl Parser {
                 c => panic!("Unexpected character {} in selector list", c),
             }
         }
-        // Return selectors with highest specificity first, for use in matching.
+        // ちょっと意味わかってない、styleを適用する順番を決めてたりする
         selectors.sort_by(|a: &Selector, b: &Selector| b.specificity().cmp(&a.specificity()));
         selectors
     }
@@ -167,7 +174,7 @@ impl Parser {
         selector
     }
 
-    /// Parse a list of declarations enclosed in `{ ... }`.
+    /// styleのvecを返す
     fn parse_declarations(&mut self) -> Vec<Declaration> {
         assert_eq!(self.consume_char(), '{');
         let mut declarations: Vec<Declaration> = Vec::new();
@@ -182,7 +189,7 @@ impl Parser {
         declarations
     }
 
-    /// Parse one `<property>: <value>;` declaration.
+    /// :で区切っている。なんとなくわかる。
     fn parse_declaration(&mut self) -> Declaration {
         let property_name: String = self.parse_identifier();
         self.consume_whitespace();
@@ -197,8 +204,6 @@ impl Parser {
             value: value,
         }
     }
-
-    // Methods for parsing values:
 
     fn parse_value(&mut self) -> Value {
         match self.next_char() {
