@@ -64,6 +64,7 @@ impl Selector {
         let a: usize = simple.id.iter().count();
         let b: usize = simple.class.len();
         let c: usize = simple.tag_name.iter().count();
+        println!("specificity - ( {:?} )", (a, b, c));
         (a, b, c)
     }
 }
@@ -108,7 +109,7 @@ impl Parser {
         rules
     }
 
-    //　selectors(margin) : declarations(auto);　みたいなのをここで作ってる
+    //　selectors(h1.style#style2) { declarations(margin: auto;) }　みたいなのをここで作ってる
     fn parse_rule(&mut self) -> Rule {
         Rule {
             selectors: self.parse_selectors(),
@@ -121,10 +122,6 @@ impl Parser {
         let mut selectors: Vec<Selector> = Vec::new();
         loop {
             // Selector::Simple(self.parse_simple_selector())を
-            println!(
-                "parse_selectors:{:?}",
-                Selector::Simple(self.parse_simple_selector())
-            );
             selectors.push(Selector::Simple(self.parse_simple_selector()));
             self.consume_whitespace();
             // 次の文字が,なら次のselectorに移る、{なら終わる
@@ -191,10 +188,13 @@ impl Parser {
 
     /// :で区切っている。なんとなくわかる。
     fn parse_declaration(&mut self) -> Declaration {
+        // :まで全て消費する
         let property_name: String = self.parse_identifier();
         self.consume_whitespace();
         assert_eq!(self.consume_char(), ':');
         self.consume_whitespace();
+        // 値によってそのまま入れるか、違う形で保存するか決める
+        // margin: auto;のautoの部分
         let value: Value = self.parse_value();
         self.consume_whitespace();
         assert_eq!(self.consume_char(), ';');
@@ -204,7 +204,7 @@ impl Parser {
             value: value,
         }
     }
-
+    // margin: auto;のautoの部分を計算する
     fn parse_value(&mut self) -> Value {
         match self.next_char() {
             '0'..='9' => self.parse_length(),
