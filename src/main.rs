@@ -3,7 +3,7 @@ use crate::html::Parser;
 pub mod css;
 pub mod dom;
 pub mod html;
-
+pub mod style;
 fn main() {
     // Node 動作確認
     let sample_node = dom::Node {
