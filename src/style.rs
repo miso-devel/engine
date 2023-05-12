@@ -5,9 +5,11 @@ use crate::{
     dom::{ElementData, Node},
 };
 
+// styleを表す型
 type PropertyMap = HashMap<String, Value>;
 
-// A node with associated style data.
+// Nodeに関連したstyleとその子要素を表す型
+// どのNodeに何のstyleがついてるかをまとめてる型
 pub struct StyledNode<'a> {
     node: &'a Node, // pointer to a DOM node
     specified_values: PropertyMap,
@@ -16,25 +18,7 @@ pub struct StyledNode<'a> {
 
 type MatchedRule<'a> = (Specificity, &'a Rule);
 
-// If `rule` matches `elem`, return a `MatchedRule`. Otherwise return `None`.
-fn match_rule<'a>(elem: &ElementData, rule: &'a Rule) -> Option<MatchedRule<'a>> {
-    // Find the first (highest-specificity) matching selector.
-    rule.selectors
-        .iter()
-        .find(|selector| matches(elem, *selector))
-        .map(|selector| (selector.specificity(), rule))
-}
-
-// Find all CSS rules that match the given element.
-fn matching_rules<'a>(elem: &ElementData, stylesheet: &'a Stylesheet) -> Vec<MatchedRule<'a>> {
-    stylesheet
-        .rules
-        .iter()
-        .filter_map(|rule| match_rule(elem, rule))
-        .collect()
-}
-
-// Apply a stylesheet to an entire DOM tree, returning a StyledNode tree.
+//　stylesheetを全てのdomに適用してStyleNodeを返す
 pub fn style_tree<'a>(root: &'a Node, stylesheet: &'a Stylesheet) -> StyledNode<'a> {
     StyledNode {
         node: root,
@@ -42,20 +26,23 @@ pub fn style_tree<'a>(root: &'a Node, stylesheet: &'a Stylesheet) -> StyledNode<
             crate::dom::NodeType::Element(ref elem) => specified_values(elem, stylesheet),
             crate::dom::NodeType::Text(_) => HashMap::new(),
         },
+        // styletreeを再起的に行なっている
         children: root
             .children
             .iter()
-            .map(|child| style_tree(child, stylesheet))
+            .map(|child: &Node| style_tree(child, stylesheet))
             .collect(),
     }
 }
 
-// Apply styles to a single element, returning the specified values.
+// elementにstyleを適用させている？
+// ElementDataはただのElementでstylesheetはrule(margin: auto;)とかのvec
 fn specified_values(elem: &ElementData, stylesheet: &Stylesheet) -> PropertyMap {
-    let mut values = HashMap::new();
-    let mut rules = matching_rules(elem, stylesheet);
+    // valuesはdeclarationが追加されていく
+    let mut values: HashMap<String, Value> = HashMap::new();
+    let mut rules: Vec<((usize, usize, usize), &Rule)> = matching_rules(elem, stylesheet);
 
-    // Go through the rules from lowest to highest specificity.
+    // 何かsortしてる。css.rsでもidとかclassでこれやった気がする
     rules.sort_by(|&(a, _), &(b, _)| a.cmp(&b));
     for (_, rule) in rules {
         for declaration in &rule.declarations {
@@ -65,6 +52,29 @@ fn specified_values(elem: &ElementData, stylesheet: &Stylesheet) -> PropertyMap 
     return values;
 }
 
+//　全てのCSSのruleからそれを持つelementを抽出する
+// stylesheetはruleのvec
+fn matching_rules<'a>(elem: &ElementData, stylesheet: &'a Stylesheet) -> Vec<MatchedRule<'a>> {
+    // match_ruleが通ったものだけ返す
+    // match_ruleはNoneを返す場合があるので
+    stylesheet
+        .rules
+        .iter()
+        .filter_map(|rule: &Rule| match_rule(elem, rule))
+        .collect()
+}
+
+// rule（例：.style{margin: auto;}）がelem(例：<h1 class="style">)とmatchしたらMatchRuleを返す。そうでなければ何も返さない。
+fn match_rule<'a>(elem: &ElementData, rule: &'a Rule) -> Option<MatchedRule<'a>> {
+    //　selectorsはstyleを当てる対象
+    // findは条件が合っているならselectorを返す
+    rule.selectors
+        .iter()
+        .find(|selector: &&Selector| matches(elem, *selector))
+        .map(|selector: &Selector| (selector.specificity(), rule))
+}
+
+//
 fn matches(elem: &ElementData, selector: &Selector) -> bool {
     match *selector {
         crate::css::Selector::Simple(ref simple_selector) => {
@@ -73,23 +83,29 @@ fn matches(elem: &ElementData, selector: &Selector) -> bool {
     }
 }
 
+//　SimpleSelectorはtag_name
 fn matches_simple_selector(elem: &ElementData, selector: &SimpleSelector) -> bool {
-    // Check type selector
-    if selector.tag_name.iter().any(|name| elem.tag_name != *name) {
+    // タグ(h1..)の名前が合ってなかったらそもそもfalse
+    // selectorってvecじゃないけどうーん、わからん。Ruleならselectorsがvecだけど
+    if selector
+        .tag_name
+        .iter()
+        .any(|name: &String| elem.tag_name != *name)
+    {
         return false;
     }
 
     // Check ID selector
-    if selector.id.iter().any(|id| elem.id() != Some(id)) {
+    if selector.id.iter().any(|id: &String| elem.id() != Some(id)) {
         return false;
     }
 
     // Check class selectors
-    let elem_classes = elem.classes();
+    let elem_classes: std::collections::HashSet<&str> = elem.classes();
     if selector
         .class
         .iter()
-        .any(|class| !elem_classes.contains(&**class))
+        .any(|class: &String| !elem_classes.contains(&**class))
     {
         return false;
     }
