@@ -8,10 +8,10 @@ pub mod html;
 pub mod style;
 fn main() {
     // Node 動作確認
-    let sample_node: dom::Node = dom::Node {
-        children: vec![],
-        node_type: dom::NodeType::Text("<h1>sample-h1</h1>".to_string()),
-    };
+    // let sample_node: dom::Node = dom::Node {
+    //     children: vec![],
+    //     node_type: dom::NodeType::Text("<h1>sample-h1</h1>".to_string()),
+    // };
     // println!("{:?}", sample_node.node_type);
 
     println!("----------------------------------------------------------------------");
