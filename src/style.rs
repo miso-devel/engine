@@ -10,10 +10,11 @@ type PropertyMap = HashMap<String, Value>;
 
 // Nodeに関連したstyleとその子要素を表す型
 // どのNodeに何のstyleがついてるかをまとめてる型
+#[derive(Debug)]
 pub struct StyledNode<'a> {
-    node: &'a Node, // pointer to a DOM node
-    specified_values: PropertyMap,
-    children: Vec<StyledNode<'a>>,
+    pub node: &'a Node, // pointer to a DOM node
+    pub specified_values: PropertyMap,
+    pub children: Vec<StyledNode<'a>>,
 }
 
 type MatchedRule<'a> = (Specificity, &'a Rule);
@@ -26,7 +27,7 @@ pub fn style_tree<'a>(root: &'a Node, stylesheet: &'a Stylesheet) -> StyledNode<
             crate::dom::NodeType::Element(ref elem) => specified_values(elem, stylesheet),
             crate::dom::NodeType::Text(_) => HashMap::new(),
         },
-        // styletreeを再起的に行なっている
+        // styletreeを再帰的に行なっている
         children: root
             .children
             .iter()
