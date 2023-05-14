@@ -5,6 +5,7 @@ use crate::html::Parser;
 pub mod css;
 pub mod dom;
 pub mod html;
+pub mod layout;
 pub mod style;
 fn main() {
     // Node 動作確認

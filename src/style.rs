@@ -17,6 +17,32 @@ pub struct StyledNode<'a> {
     pub children: Vec<StyledNode<'a>>,
 }
 
+#[derive(PartialEq)]
+pub enum Display {
+    Inline,
+    Block,
+    None,
+}
+
+impl<'a> StyledNode<'a> {
+    // Return the specified value of a property if it exists, otherwise `None`.
+    pub fn value(&self, name: &str) -> Option<Value> {
+        self.specified_values.get(name).map(|v: &Value| v.clone())
+    }
+
+    // The value of the `display` property (defaults to inline).
+    pub fn display(&self) -> Display {
+        match self.value("display") {
+            Some(Value::Keyword(s)) => match &*s {
+                "block" => Display::Block,
+                "none" => Display::None,
+                _ => Display::Inline,
+            },
+            _ => Display::Inline,
+        }
+    }
+}
+
 type MatchedRule<'a> = (Specificity, &'a Rule);
 
 //　stylesheetを全てのdomに適用してStyleNodeを返す
