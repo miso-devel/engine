@@ -17,6 +17,7 @@ pub struct StyledNode<'a> {
     pub children: Vec<StyledNode<'a>>,
 }
 
+// layout.rsでlayoutを作るときにdisplayの情報が必要なので
 #[derive(PartialEq)]
 pub enum Display {
     Inline,
@@ -26,18 +27,22 @@ pub enum Display {
 
 impl<'a> StyledNode<'a> {
     // Return the specified value of a property if it exists, otherwise `None`.
+    // .style{ margin: auto; padding: auto}の部分。これなんて言うのかなstyle?のautoとかの部分全部とってきて配列で返してる
     pub fn value(&self, name: &str) -> Option<Value> {
         self.specified_values.get(name).map(|v: &Value| v.clone())
     }
 
-    // The value of the `display` property (defaults to inline).
+    // displayのデフォルトをinlineにしてる
     pub fn display(&self) -> Display {
+        // あ、valueでdisplayの値をとってきてるのか（配列で返されてるの気になるけど..）
         match self.value("display") {
+            // Someでそもそもkeywordなんか？みたいなの見てる
             Some(Value::Keyword(s)) => match &*s {
                 "block" => Display::Block,
                 "none" => Display::None,
                 _ => Display::Inline,
             },
+            // それ以外ならinline
             _ => Display::Inline,
         }
     }
